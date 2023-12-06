@@ -2,11 +2,22 @@ import pygame
 import sys
 from random import randint, uniform
 
-def laser_update(laser_list, speed = 300):
+def laser_update(laser_list, speed):
     for rect in laser_list:
         rect.y -= speed * dt
         if rect.bottom < 0:
             laser_list.remove(rect)
+            
+def laser_upgrade(kills, laser_list):
+    if kills %5 == 0 and kills != 0 and kills %10 != 0 and laser_list[2]:
+        laser_list[1] += 100
+        laser_list[2] = False
+    elif kills %10 == 0 and kills != 0 and laser_list[2]:
+        laser_list[0] -= 50
+        laser_list[2] = False
+    elif kills %5 != 0:
+        laser_list[2] = True
+    return laser_list
             
 def meteor_update(meteor_list, speed = 200):
     for meteor_tuple in meteor_list:
@@ -17,8 +28,8 @@ def meteor_update(meteor_list, speed = 200):
         if meteor_rect.top > SCREEN_HEIGHT:
             meteor_list.remove(meteor_tuple)
 
-def display_score():
-    score_text = f'Score: {pygame.time.get_ticks() // 1000}'
+def display_score(kills):
+    score_text = f'Time: {pygame.time.get_ticks() // 1000}   Score: {kills}'
     text_surf = font.render(score_text, True, 'white')
     text_rect = text_surf.get_rect(center = (SCREEN_WIDTH / 2, SCREEN_HEIGHT - 80))
     display_surface.blit(text_surf,text_rect)
@@ -39,6 +50,10 @@ FONT_SIZE = 50
 
 # game variables
 LASER_COOLDOWN = 500    # in ms
+LASER_SPEED = 300
+LASER_R = True
+LASER_LIST = [LASER_COOLDOWN, LASER_SPEED, LASER_R]
+KILLS = 0
 
 # game init
 pygame.init()
@@ -122,9 +137,12 @@ while True:
     ship_rect.center = pygame.mouse.get_pos()
 
 	# update
-    laser_update(laser_list)
+    laser_update(laser_list, LASER_LIST[1])
     can_shoot = laser_timer(can_shoot, LASER_COOLDOWN)
     meteor_update(meteor_list)
+    
+    LASER_LIST = laser_upgrade(KILLS, LASER_LIST)
+    print(LASER_LIST)
     
     # meteor ship collisions
     for meteor_tuple in meteor_list:
@@ -140,12 +158,13 @@ while True:
                 meteor_list.remove(meteor_tuple)
                 laser_list.remove(laser_rect)
                 explosion_sound.play()
+                KILLS += 1
     
     # drawing
     display_surface.fill((0, 0, 0))
     display_surface.blit(bg_surf,(0, 0))
     
-    display_score()
+    display_score(KILLS)
     
     for meteor_tuple in meteor_list:
         display_surface.blit(meteor_surf,meteor_tuple[0])
