@@ -2,12 +2,14 @@ import pygame
 import sys
 from random import randint, uniform
 
+# laser movement
 def laser_update(laser_list, speed):
     for rect in laser_list:
         rect.y -= speed * dt
         if rect.bottom < 0:
             laser_list.remove(rect)
-            
+ 
+# laser upgrades           
 def laser_upgrade(kills, laser_list):
     if kills %5 == 0 and kills != 0 and kills %10 != 0 and laser_list[2] and kills %100 != 0:
         laser_list[1] += 100
@@ -20,7 +22,17 @@ def laser_upgrade(kills, laser_list):
     elif kills %5 != 0:
         laser_list[2] = True
     return laser_list
-            
+
+# laser timer 
+def laser_timer(can_shoot, duration):
+    if not can_shoot:
+        current_time = pygame.time.get_ticks()
+        # print(str(duration) + " ;  " + str(current_time - shoot_time))
+        if current_time - shoot_time > duration:
+            can_shoot = True
+    return can_shoot
+
+# meteor movement            
 def meteor_update(meteor_list, speed = 200):
     for meteor_tuple in meteor_list:
         
@@ -30,6 +42,18 @@ def meteor_update(meteor_list, speed = 200):
         if meteor_rect.top > SCREEN_HEIGHT:
             meteor_list.remove(meteor_tuple)
 
+def meteor_amount(meteor_frequency, meteor_timer):
+    game_time = pygame.time.get_ticks() // 1000
+    if game_time %10 == 0 and game_time != 0 and meteor_frequency[1] and meteor_frequency[0] > 199:
+        meteor_frequency[0] -= 50
+        pygame.time.set_timer(meteor_timer, meteor_frequency[0])
+        meteor_frequency[1] = False
+    elif game_time %10 != 0:
+        meteor_frequency[1] = True
+    return meteor_frequency
+        
+
+# import and draw score
 def display_score(kills):
     score_text = f'Time: {pygame.time.get_ticks() // 1000}   Score: {kills}'
     text_surf = font.render(score_text, True, 'white')
@@ -37,26 +61,23 @@ def display_score(kills):
     display_surface.blit(text_surf,text_rect)
     pygame.draw.rect(display_surface, 'white', text_rect.inflate(30, 30), width = 8, border_radius = 5)
 
-def laser_timer(can_shoot, duration):
-    if not can_shoot:
-        current_time = pygame.time.get_ticks()
-        if current_time - shoot_time > duration:
-            can_shoot = True
-    return can_shoot
-
 # constants
-SCREEN_WIDTH, SCREEN_HEIGHT = 1280, 720
-FRAMERATE = 120
+SCREEN_WIDTH, SCREEN_HEIGHT = 1280, 720 # 1280, 720
+FRAMERATE = 120         # 120
 PATH = 'pygame-testing/Asteroid Shooter'
-FONT_SIZE = 50
+FONT_SIZE = 50          # 50
 
 # game variables
-LASER_COOLDOWN = 500    # in ms
-LASER_SPEED = 300
-LASER_R = True
-UPGRADE = False
-LASER_LIST = [LASER_COOLDOWN, LASER_SPEED, LASER_R, UPGRADE]
-KILLS = 0
+LASER_COOLDOWN = 500    # start 500 (ms)
+LASER_SPEED = 300       # start 300
+LASER_READY = True      # start True
+UPGRADE = False         # start False
+LASER_LIST = [LASER_COOLDOWN, LASER_SPEED, LASER_READY, UPGRADE]
+
+METEOR_FREQUENCY = 700  # start 700
+METEOR_READY = True     # start True
+METEOR_LIST = [METEOR_FREQUENCY, METEOR_READY]
+KILLS = 0               # start 0
 
 # game init
 pygame.init()
@@ -71,7 +92,6 @@ ship_rect = ship_surf.get_rect(center = (SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2))
 # laser import
 laser_surf = pygame.image.load(PATH + '/graphics/laser.png').convert_alpha()
 laser_list = []
-# laser_rect = laser_surf.get_rect(midbottom = ship_rect.midtop)
 
 # laser timer
 can_shoot = True
@@ -89,9 +109,9 @@ meteor_list = []
 
 # meteor timer
 meteor_timer = pygame.event.custom_type()
-pygame.time.set_timer(meteor_timer, 500)
+pygame.time.set_timer(meteor_timer, METEOR_LIST[0])
 
-# import sound
+# sound import
 laser_sound = pygame.mixer.Sound(PATH + '/sounds/laser.ogg')
 explosion_sound = pygame.mixer.Sound(PATH + '/sounds/explosion.wav')
 background_music = pygame.mixer.Sound(PATH + '/sounds/music.wav')
@@ -153,7 +173,10 @@ while True:
         ship_surf = pygame.image.load(PATH + '/graphics/ship_upgrade.png').convert_alpha()
     
     LASER_LIST = laser_upgrade(KILLS, LASER_LIST)
-    print(LASER_LIST)
+    LASER_COOLDOWN = LASER_LIST[0]
+    METEOR_FREQUENCY = meteor_amount(METEOR_LIST, meteor_timer)
+    print(METEOR_FREQUENCY)
+    # print(LASER_LIST)
     
     # meteor ship collisions
     for meteor_tuple in meteor_list:
@@ -174,12 +197,10 @@ while True:
     # drawing
     display_surface.fill((0, 0, 0))
     display_surface.blit(bg_surf,(0, 0))
-    
     display_score(KILLS)
     
     for meteor_tuple in meteor_list:
         display_surface.blit(meteor_surf,meteor_tuple[0])
-    
     for rect in laser_list:
         display_surface.blit(laser_surf,rect)
         
