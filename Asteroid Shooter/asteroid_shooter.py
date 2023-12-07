@@ -9,12 +9,14 @@ def laser_update(laser_list, speed):
             laser_list.remove(rect)
             
 def laser_upgrade(kills, laser_list):
-    if kills %5 == 0 and kills != 0 and kills %10 != 0 and laser_list[2]:
+    if kills %5 == 0 and kills != 0 and kills %10 != 0 and laser_list[2] and kills %100 != 0:
         laser_list[1] += 100
         laser_list[2] = False
-    elif kills %10 == 0 and kills != 0 and laser_list[2]:
+    elif kills %10 == 0 and kills != 0 and laser_list[2] and laser_list[0] >= 100 and kills %100 != 0:
         laser_list[0] -= 50
         laser_list[2] = False
+    elif kills %100 == 0 and kills != 0 and laser_list[2]:
+        laser_list[3] = True
     elif kills %5 != 0:
         laser_list[2] = True
     return laser_list
@@ -52,7 +54,8 @@ FONT_SIZE = 50
 LASER_COOLDOWN = 500    # in ms
 LASER_SPEED = 300
 LASER_R = True
-LASER_LIST = [LASER_COOLDOWN, LASER_SPEED, LASER_R]
+UPGRADE = False
+LASER_LIST = [LASER_COOLDOWN, LASER_SPEED, LASER_R, UPGRADE]
 KILLS = 0
 
 # game init
@@ -106,8 +109,14 @@ while True:
         if event.type == pygame.MOUSEBUTTONDOWN and can_shoot:
             
             # laser
-            laser_rect = laser_surf.get_rect(midbottom = ship_rect.midbottom)
-            laser_list.append(laser_rect)
+            if LASER_LIST[3]:
+                laser_rect1 = laser_surf.get_rect(bottomright = ship_rect.topright)
+                laser_rect2 = laser_surf.get_rect(bottomleft = ship_rect.topleft)
+                laser_list.append(laser_rect1)
+                laser_list.append(laser_rect2)
+            else:
+                laser_rect = laser_surf.get_rect(midbottom = ship_rect.midtop)
+                laser_list.append(laser_rect)
             
             # timer
             can_shoot = False
@@ -140,6 +149,8 @@ while True:
     laser_update(laser_list, LASER_LIST[1])
     can_shoot = laser_timer(can_shoot, LASER_COOLDOWN)
     meteor_update(meteor_list)
+    if LASER_LIST[3]:
+        ship_surf = pygame.image.load(PATH + '/graphics/ship_upgrade.png').convert_alpha()
     
     LASER_LIST = laser_upgrade(KILLS, LASER_LIST)
     print(LASER_LIST)
